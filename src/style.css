@@ -248,6 +248,15 @@ button:hover {
   color: var(--primary-color);
 }
 
+.tutorial-section .tip {
+  background: rgba(0, 240, 255, 0.1);
+  border-left: 3px solid var(--primary-color);
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  font-size: 0.95rem;
+}
+
 .item-list {
   display: flex;
   flex-direction: column;

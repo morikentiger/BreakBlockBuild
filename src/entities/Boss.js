@@ -4,16 +4,19 @@ export class Boss {
         this.y = y;
         this.width = 100;
         this.height = 100;
-        this.hp = 100;
-        this.maxHp = 100;
+        this.hp = 1000;
+        this.maxHp = 1000;
         this.active = true;
         this.color = '#ff0000';
         this.state = 'idle'; // idle, attack, move
         this.timer = 0;
+        this.attackTimer = 0;
+        this.attackCooldown = 2.0; // Attack every 2 seconds
     }
 
     update(deltaTime, player) {
         this.timer += deltaTime;
+        this.attackTimer += deltaTime;
 
         // Simple AI: Move towards player horizontally
         const dx = player.x - (this.x + this.width / 2);
@@ -23,5 +26,31 @@ export class Boss {
 
         // Hover effect
         this.y = 50 + Math.sin(this.timer * 2) * 20;
+    }
+
+    shouldAttack() {
+        if (this.attackTimer >= this.attackCooldown) {
+            this.attackTimer = 0;
+            return true;
+        }
+        return false;
+    }
+
+    getAttackProjectile(playerX, playerY) {
+        // Fire from boss center towards player
+        const startX = this.x + this.width / 2;
+        const startY = this.y + this.height / 2;
+
+        // Calculate direction to player
+        const dx = playerX - startX;
+        const dy = playerY - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Normalize and set speed
+        const speed = 400;
+        const vx = (dx / distance) * speed;
+        const vy = (dy / distance) * speed;
+
+        return { x: startX, y: startY, vx, vy };
     }
 }

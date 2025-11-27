@@ -7,7 +7,8 @@ export class Player {
         this.atk = 1;
         this.def = 1;
         this.hp = 100;
-        this.color = '#00f0ff';
+        this.baseColor = '#00f0ff';
+        this.color = this.baseColor;
         this.isCharging = false;
 
         // New Mechanics
@@ -18,6 +19,7 @@ export class Player {
         this.attackTimer = 0;
         this.invincible = false;
         this.invincibleTimer = 0;
+        this.chargeDirection = { x: 0, y: -1 }; // Default: upward
 
         // Shake Detection
         this.lastX = x;
@@ -59,15 +61,38 @@ export class Player {
         if (input.chargeActive) {
             this.isCharging = true;
             this.chargePower += deltaTime * 5; // Accumulate power
-            this.chargePower = Math.min(this.chargePower, 10); // Cap power
-            // Visual shake or glow could increase here
+            this.chargePower = Math.min(this.chargePower, 20); // Cap power (higher for multi-block)
+
+            // Color feedback: gradually turn red
+            const chargeRatio = this.chargePower / 20;
+            const r = Math.floor(255 * chargeRatio);
+            const g = Math.floor(240 * (1 - chargeRatio));
+            const b = 255;
+            this.color = `rgb(${r}, ${g}, ${b})`;
         } else {
             if (this.isCharging) {
-                // RELEASE
+                // RELEASE - Store current input direction
+                const move = input.getMovement();
+                if (move.x !== 0 || move.y !== 0) {
+                    // Normalize direction
+                    const magnitude = Math.sqrt(move.x * move.x + move.y * move.y);
+                    this.chargeDirection = {
+                        x: move.x / magnitude,
+                        y: move.y / magnitude
+                    };
+                } else {
+                    // Default to upward if no input
+                    this.chargeDirection = { x: 0, y: -1 };
+                }
+
                 this.isCharging = false;
                 this.isAttacking = true;
                 this.attackTimer = 0.5; // Duration of dash/attack
                 this.chargePower = Math.max(1, this.chargePower); // Min power
+            }
+            // Reset color when not charging
+            if (!this.invincible) {
+                this.color = this.baseColor;
             }
         }
 
@@ -77,8 +102,10 @@ export class Player {
                 this.isAttacking = false;
                 this.chargePower = 0;
             } else {
-                // Charge Attack Movement
-                this.y -= (500 + this.chargePower * 50) * deltaTime;
+                // Charge Attack Movement - Use stored direction
+                const speed = 500 + this.chargePower * 50;
+                this.x += this.chargeDirection.x * speed * deltaTime;
+                this.y += this.chargeDirection.y * speed * deltaTime;
             }
         } else if (!this.isCharging) {
             // Normal Movement

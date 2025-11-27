@@ -136,11 +136,23 @@ export class Renderer {
     }
 
     drawProjectile(proj) {
-        this.ctx.fillStyle = proj.type === 'beam' ? '#00f0ff' : '#ff0055';
+        this.ctx.save();
         this.ctx.shadowBlur = 10;
-        this.ctx.shadowColor = this.ctx.fillStyle;
-        this.ctx.fillRect(proj.x - proj.width / 2, proj.y - proj.height / 2, proj.width, proj.height);
-        this.ctx.shadowBlur = 0;
+        this.ctx.shadowColor = proj.color;
+
+        if (proj.type === 'boss_bullet') {
+            // Draw boss bullets as circles
+            this.ctx.fillStyle = proj.color;
+            this.ctx.beginPath();
+            this.ctx.arc(proj.x, proj.y, proj.radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        } else {
+            // Draw player projectiles as rectangles
+            this.ctx.fillStyle = proj.type === 'beam' ? '#00f0ff' : '#ff0055';
+            this.ctx.fillRect(proj.x - proj.width / 2, proj.y - proj.height / 2, proj.width, proj.height);
+        }
+
+        this.ctx.restore();
     }
 
     drawFloatingText(text) {

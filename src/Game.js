@@ -56,11 +56,12 @@ export class Game {
         this.floatingTexts = [];
         this.score = 0;
         this.spawnTimer = 0;
-        this.scrollSpeed = 100;
+        this.baseScrollSpeed = 60; // Start slower
+        this.scrollSpeed = this.baseScrollSpeed;
         // Block Height is Player Radius * 4 = 80.
-        // Speed is 100 px/s.
-        // Interval = 80 / 100 = 0.8s
-        this.spawnInterval = 0.8;
+        // Initial Speed is 60 px/s.
+        // Interval = 80 / 60 = 1.33s
+        this.spawnInterval = 1.33;
 
         this.gameTime = 60; // 60 Seconds for scavenge phase
         this.phase = 'scavenge'; // 'scavenge', 'boss'
@@ -87,7 +88,12 @@ export class Game {
         this.startScreen.classList.add('hidden');
         this.gameOverScreen.classList.add('hidden');
         this.isRunning = true;
+        this.phase = 'scavenge'; // Ensure phase is correct
         this.lastTime = performance.now();
+
+        // Force initial spawn
+        this.spawnBlock();
+
         requestAnimationFrame(this.loop.bind(this));
     }
 
@@ -99,8 +105,14 @@ export class Game {
     loop(timestamp) {
         if (!this.isRunning) return;
 
-        const deltaTime = (timestamp - this.lastTime) / 1000;
+        // Handle first frame or weird timestamps
+        if (!this.lastTime) this.lastTime = timestamp;
+
+        let deltaTime = (timestamp - this.lastTime) / 1000;
         this.lastTime = timestamp;
+
+        // Cap deltaTime to prevent huge jumps (e.g. tab switching)
+        if (deltaTime > 0.1) deltaTime = 0.1;
 
         this.update(deltaTime);
         this.draw();
@@ -110,6 +122,12 @@ export class Game {
 
     update(deltaTime) {
         this.player.update(deltaTime, this.input);
+
+        // Dynamic Difficulty: Increase speed based on player power
+        if (this.phase === 'scavenge') {
+            const playerPower = this.player.atk + this.player.speed / 100 + this.player.def;
+            this.scrollSpeed = this.baseScrollSpeed + (playerPower * 8); // Gradual increase
+        }
 
         // Block Spawning
         this.spawnTimer += deltaTime;
@@ -193,19 +211,42 @@ export class Game {
         } else if (this.phase === 'boss') {
             if (this.boss) {
                 this.boss.update(deltaTime, this.player);
+
+                // Boss Attack
+                if (this.boss.shouldAttack()) {
+                    const attack = this.boss.getAttackProjectile(this.player.x, this.player.y);
+                    this.projectiles.push(new Projectile(attack.x, attack.y, attack.vx, attack.vy, 'boss_bullet'));
+                }
+
                 // Boss Collision
                 if (Physics.checkCollision(this.player, { x: this.boss.x, y: this.boss.y, width: this.boss.width, height: this.boss.height })) {
-                    if (this.player.isCharging) {
+                    if (this.player.isAttacking) {
                         this.boss.hp -= this.player.atk;
                         // Push back boss or player
                         if (this.boss.hp <= 0) {
                             this.gameWin();
                         }
-                    } else {
+                    } else if (!this.player.invincible) {
                         // Player takes damage
                         this.player.hp -= 1; // Simple damage
+                        if (this.player.hp <= 0) {
+                            this.gameOver();
+                        }
                     }
                 }
+
+                // Boss Projectile vs Player
+                this.projectiles.forEach(proj => {
+                    if (proj.type === 'boss_bullet' && proj.active && Physics.checkCircleCollision(this.player, proj)) {
+                        if (!this.player.invincible) {
+                            this.player.hp -= 5;
+                            if (this.player.hp <= 0) {
+                                this.gameOver();
+                            }
+                        }
+                        proj.active = false;
+                    }
+                });
             }
         }
     }
@@ -228,15 +269,24 @@ export class Game {
     spawnBlock() {
         if (this.phase !== 'scavenge') return;
 
-        const blockWidth = this.player.radius * 4; // 2x Player Width (Radius * 2 * 2)
-        const blockHeight = blockWidth; // Square
+        const blockWidth = this.player.radius * 4; // 80px
         const cols = Math.floor(this.width / blockWidth);
-        const startX = (this.width - (cols * blockWidth)) / 2; // Center alignment
+        const startX = (this.width - (cols * blockWidth)) / 2;
+
+        if (cols <= 0) return;
 
         // Randomly choose one or two gaps
-        const gap1 = Math.floor(Math.random() * cols);
+        // If cols is 1, we must NOT always have a gap, otherwise nothing spawns.
+        // Let's say 30% chance of gap for single column, or just no gap (player must break it).
+        let gap1 = Math.floor(Math.random() * cols);
+
+        if (cols === 1) {
+            // For single column, 50% chance to be a gap (no block), 50% chance to spawn block
+            if (Math.random() > 0.5) gap1 = -1;
+        }
+
         let gap2 = -1;
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.5 && cols > 2) {
             gap2 = Math.floor(Math.random() * cols);
         }
 
@@ -244,10 +294,10 @@ export class Game {
             if (i === gap1 || i === gap2) continue; // Leave gaps
 
             const x = startX + i * blockWidth;
-            const y = -blockHeight;
+            const y = -blockWidth; // Start just above screen
             const type = Math.random() > 0.8 ? 'hard' : (Math.random() > 0.8 ? 'resource' : 'normal');
 
-            this.blocks.push(new Block(x, y, blockWidth, blockHeight, type));
+            this.blocks.push(new Block(x, y, blockWidth, blockWidth, type));
         }
     }
 
@@ -272,7 +322,9 @@ export class Game {
             // Break block using Charge Power
             const damage = player.atk + player.chargePower;
             block.hp -= damage;
-            player.chargePower = Math.max(0, player.chargePower - 1); // Consume power
+
+            // Consume less power per block to enable multi-block destruction
+            player.chargePower = Math.max(0, player.chargePower - 3); // Consume 3 power per block
 
             if (block.hp <= 0) {
                 block.active = false;
@@ -350,6 +402,7 @@ export class Game {
     updateHUD() {
         document.getElementById('score-val').innerText = this.score;
         document.getElementById('time-val').innerText = Math.ceil(this.gameTime);
+        document.getElementById('hp-val').innerText = Math.max(0, Math.floor(this.player.hp));
         document.getElementById('atk-val').innerText = this.player.atk;
         document.getElementById('spd-val').innerText = Math.floor(this.player.speed);
         document.getElementById('def-val').innerText = this.player.def;

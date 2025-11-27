@@ -4,11 +4,12 @@ export class Projectile {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.type = type; // 'beam', 'bullet'
+        this.type = type; // 'beam', 'bullet', 'boss_bullet'
         this.active = true;
         this.width = type === 'beam' ? 20 : 10;
         this.height = type === 'beam' ? 40 : 10;
-        this.color = '#fff';
+        this.radius = type === 'boss_bullet' ? 8 : 5;
+        this.color = type === 'boss_bullet' ? '#ff0055' : '#fff';
     }
 
     update(deltaTime) {
