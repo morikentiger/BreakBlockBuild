@@ -23,13 +23,29 @@ export class Game {
 
         // UI Elements
         this.startScreen = document.getElementById('start-screen');
+        this.tutorialScreen = document.getElementById('tutorial-screen');
         this.gameOverScreen = document.getElementById('game-over-screen');
+        this.startBtn = document.getElementById('start-btn');
+        this.tutorialBtn = document.getElementById('tutorial-btn');
+        this.closeTutorialBtn = document.getElementById('close-tutorial-btn');
         this.restartBtn = document.getElementById('restart-btn');
 
-        this.startScreen.addEventListener('click', () => this.start());
+        this.startBtn.addEventListener('click', () => this.start());
+        this.tutorialBtn.addEventListener('click', () => this.showTutorial());
+        this.closeTutorialBtn.addEventListener('click', () => this.hideTutorial());
         this.restartBtn.addEventListener('click', () => this.restart());
 
         this.reset();
+    }
+
+    showTutorial() {
+        this.startScreen.classList.add('hidden');
+        this.tutorialScreen.classList.remove('hidden');
+    }
+
+    hideTutorial() {
+        this.tutorialScreen.classList.add('hidden');
+        this.startScreen.classList.remove('hidden');
     }
 
     reset() {

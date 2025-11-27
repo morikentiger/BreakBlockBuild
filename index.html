@@ -27,7 +27,42 @@
       </div>
       <div id="start-screen" class="screen">
         <h1>BREAK BUILD BLOCK</h1>
-        <p>Tap to Start</p>
+        <p class="subtitle">ブロックを壊して強くなれ！</p>
+        <div class="menu-buttons">
+          <button id="start-btn" class="menu-btn primary">スタート</button>
+          <button id="tutorial-btn" class="menu-btn">遊び方</button>
+        </div>
+      </div>
+      <div id="tutorial-screen" class="screen hidden">
+        <h2>遊び方</h2>
+        <div class="tutorial-content">
+          <div class="tutorial-section">
+            <h3>🎮 操作方法</h3>
+            <p><strong>移動:</strong> 左の仮想ジョイスティックをドラッグ（PC: マウス / キーボード: WASD or 矢印キー）</p>
+            <p><strong>チャージ攻撃:</strong> 右のボタンを長押し→離す（PC: マウス / キーボード: スペース）</p>
+            <p><strong>シェイク攻撃:</strong> 素早く左右に動く</p>
+          </div>
+          <div class="tutorial-section">
+            <h3>🎯 ゲームの目的</h3>
+            <p>1. 落ちてくるブロックを壊してアイテムを集める（60秒）</p>
+            <p>2. ステータスを強化してボスを倒す！</p>
+          </div>
+          <div class="tutorial-section">
+            <h3>💎 アイテム</h3>
+            <div class="item-list">
+              <div class="item-info"><span class="item-icon atk">⚔️</span> ATK - 攻撃力UP</div>
+              <div class="item-info"><span class="item-icon spd">⚡</span> SPD - 移動速度UP</div>
+              <div class="item-info"><span class="item-icon def">🛡️</span> DEF - 防御力UP</div>
+              <div class="item-info"><span class="item-icon hp">❤️</span> HP - 体力回復</div>
+              <div class="item-info"><span class="item-icon inv">🌈</span> 無敵 - 一定時間無敵！</div>
+            </div>
+          </div>
+          <div class="tutorial-section">
+            <h3>⚠️ 注意</h3>
+            <p>ブロックに押されて画面下に出ると<strong>ゲームオーバー</strong>！</p>
+          </div>
+        </div>
+        <button id="close-tutorial-btn" class="menu-btn primary">閉じる</button>
       </div>
       <div id="game-over-screen" class="screen hidden">
         <h1>GAME OVER</h1>

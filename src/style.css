@@ -164,3 +164,132 @@ button:hover {
   color: black;
   box-shadow: 0 0 20px var(--primary-color);
 }
+
+/* Menu Buttons */
+.subtitle {
+  font-size: 1.2rem;
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.menu-btn {
+  padding: 15px 60px;
+  font-size: 1.3rem;
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+.menu-btn.primary {
+  background: var(--primary-color);
+  color: black;
+  box-shadow: 0 0 15px var(--primary-color);
+}
+
+.menu-btn:hover {
+  background: var(--primary-color);
+  color: black;
+  box-shadow: 0 0 20px var(--primary-color);
+  transform: scale(1.05);
+}
+
+/* Tutorial Screen */
+#tutorial-screen {
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+
+#tutorial-screen h2 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 30px;
+  text-shadow: 0 0 15px var(--primary-color);
+}
+
+.tutorial-content {
+  max-width: 600px;
+  width: 90%;
+  margin-bottom: 30px;
+}
+
+.tutorial-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.tutorial-section h3 {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  margin-top: 0;
+}
+
+.tutorial-section p {
+  margin: 10px 0;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.tutorial-section strong {
+  color: var(--primary-color);
+}
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.item-icon {
+  font-size: 1.5rem;
+  width: 30px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  h1 {
+    font-size: 2rem;
+  }
+
+  #tutorial-screen h2 {
+    font-size: 1.8rem;
+  }
+
+  .tutorial-section h3 {
+    font-size: 1.2rem;
+  }
+
+  .tutorial-section p {
+    font-size: 0.9rem;
+  }
+
+  .menu-btn {
+    font-size: 1.1rem;
+    padding: 12px 40px;
+  }
+}
