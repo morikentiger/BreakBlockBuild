@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BreakBuildBlock</title>
+</head>
+
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="ui-layer">
+      <div id="hud">
+        <div id="score-display">SCORE: <span id="score-val">0</span></div>
+        <div id="time-display">TIME: <span id="time-val">00:00</span></div>
+        <div id="stats-display">
+          <div class="stat">ATK: <span id="atk-val">1</span></div>
+          <div class="stat">SPD: <span id="spd-val">1</span></div>
+          <div class="stat">DEF: <span id="def-val">1</span></div>
+        </div>
+      </div>
+      <div id="virtual-controls">
+        <div id="joystick-zone"></div>
+        <div id="action-button">CHARGE</div>
+      </div>
+      <div id="start-screen" class="screen">
+        <h1>BREAK BUILD BLOCK</h1>
+        <p>Tap to Start</p>
+      </div>
+      <div id="game-over-screen" class="screen hidden">
+        <h1>GAME OVER</h1>
+        <p>Score: <span id="final-score">0</span></p>
+        <button id="restart-btn">Restart</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
