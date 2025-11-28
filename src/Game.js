@@ -324,7 +324,7 @@ export class Game {
         const gameUrl = 'https://morikentiger.github.io/BreakBlockBuild/';
 
         // Antigravity URL with score parameter
-        const antigravityUrl = `https://morikentiger.github.io/Antigravity/?score=${score}&game=${gameName}`;
+        const antigravityUrl = `https://antigravity-sns.vercel.app/?score=${score}&game=${gameName}`;
 
         // Open in new tab
         window.open(antigravityUrl, '_blank');
