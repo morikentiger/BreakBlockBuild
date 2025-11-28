@@ -71,6 +71,32 @@ export class Renderer {
             this.ctx.stroke();
         }
 
+        // Sword Visuals
+        if (player.hasSword) {
+            const swordX = Math.cos(player.swordAngle) * player.swordRadius;
+            const swordY = Math.sin(player.swordAngle) * player.swordRadius;
+
+            this.ctx.save();
+            this.ctx.translate(swordX, swordY);
+            this.ctx.rotate(player.swordAngle + Math.PI / 2); // Rotate sword to face direction of orbit
+
+            // Draw Sword
+            this.ctx.fillStyle = '#ffaa00'; // Gold
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = '#ffaa00';
+
+            // Blade
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -20);
+            this.ctx.lineTo(5, 0);
+            this.ctx.lineTo(0, 20);
+            this.ctx.lineTo(-5, 0);
+            this.ctx.closePath();
+            this.ctx.fill();
+
+            this.ctx.restore();
+        }
+
         this.ctx.restore();
     }
 
@@ -165,7 +191,18 @@ export class Renderer {
             this.ctx.beginPath();
             this.ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
             this.ctx.stroke();
+            this.ctx.stroke();
             this.ctx.fillRect(-2, -item.radius, 4, item.radius * 2);
+        } else if (item.type === 'sword') {
+            // Sword Icon
+            this.ctx.fillStyle = item.color;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -item.radius);
+            this.ctx.lineTo(item.radius / 3, 0);
+            this.ctx.lineTo(0, item.radius);
+            this.ctx.lineTo(-item.radius / 3, 0);
+            this.ctx.closePath();
+            this.ctx.fill();
         } else {
             // Default Circle
             this.ctx.beginPath();

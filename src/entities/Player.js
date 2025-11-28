@@ -32,6 +32,14 @@ export class Player {
         this.shakeCount = 0;
         this.shakeTimer = 0;
         this.isShaking = false;
+
+        this.weaponTimer = 0; // Fix for beam firing
+
+        // Sword Mechanics
+        this.hasSword = false;
+        this.swordAngle = 0;
+        this.swordRadius = 60; // Distance from player
+        this.swordSize = 20;
     }
 
     // Exponential Stat Getters
@@ -71,6 +79,9 @@ export class Player {
                 break;
             case 'beam':
                 this.hasBeam = true;
+                break;
+            case 'sword':
+                this.hasSword = true;
                 break;
         }
     }
@@ -182,6 +193,11 @@ export class Player {
                 this.x += move.x * this.speed * deltaTime;
                 this.y += move.y * this.speed * deltaTime;
             }
+        }
+
+        // Sword Orbit
+        if (this.hasSword) {
+            this.swordAngle += deltaTime * 5; // Rotation speed
         }
 
         // Boundary checks

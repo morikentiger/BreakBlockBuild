@@ -191,6 +191,34 @@ export class Game {
         // Update Floating Texts
         this.floatingTexts.forEach(text => text.update(deltaTime));
 
+        // Sword Collision Logic
+        if (this.player.hasSword) {
+            const swordX = this.player.x + Math.cos(this.player.swordAngle) * this.player.swordRadius;
+            const swordY = this.player.y + Math.sin(this.player.swordAngle) * this.player.swordRadius;
+            const swordSize = this.player.swordSize;
+
+            // Sword vs Blocks
+            this.blocks.forEach(block => {
+                if (block.active && Physics.checkCollision({ x: swordX, y: swordY, radius: swordSize }, block)) {
+                    block.hp = 0;
+                    block.active = false;
+                    this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
+                    this.score += 100;
+                    this.spawnFloatingText(block.x, block.y, "SLASH!", "#ffaa00");
+                }
+            });
+
+            // Sword vs Projectiles (Boss bullets)
+            this.projectiles.forEach(proj => {
+                if (proj.active && (proj.type === 'boss_bullet' || proj.type === 'homing_missile')) {
+                    if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize }, proj)) {
+                        proj.active = false; // Destroy bullet
+                        this.spawnFloatingText(proj.x, proj.y, "BLOCK!", "#ffaa00");
+                    }
+                }
+            });
+        }
+
         // Weapon Firing Logic
         // If hasBeam, fire beam instead of dash
         if (this.player.isAttacking && this.player.hasBeam) {
@@ -370,6 +398,11 @@ export class Game {
             else if (rand < 0.40) type = 'spd';
             else if (rand < 0.60) type = 'def';
             else type = 'beam'; // 40% chance for beam from resource
+        } else if (blockType === 'hard') {
+            // Red block - chance for sword
+            const rand = Math.random();
+            if (rand > 0.7) type = 'sword'; // 30% chance for sword
+            else type = 'atk';
         } else {
             const rand = Math.random();
             if (rand > 0.95) type = 'invincible'; // Rare invincibility
@@ -394,6 +427,9 @@ export class Game {
         } else if (item.type === 'beam') {
             this.player.upgrade('beam');
             text = "BEAM UNLOCKED!";
+        } else if (item.type === 'sword') {
+            this.player.upgrade('sword');
+            text = "SWORD EQUIPPED!";
         } else {
             this.player.upgrade(item.type);
             text = `+${item.type.toUpperCase()}`;
