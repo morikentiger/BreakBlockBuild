@@ -162,7 +162,7 @@ export class Game {
 
         // Update Projectiles
         this.projectiles.forEach(proj => {
-            proj.update(deltaTime);
+            proj.update(deltaTime, this.player);
 
             // Projectile vs Blocks
             this.blocks.forEach(block => {
@@ -178,7 +178,10 @@ export class Game {
             });
 
             // Projectile vs Boss
-            if (this.boss && this.phase === 'boss' && Physics.checkCollision(proj, { x: this.boss.x, y: this.boss.y, width: this.boss.width, height: this.boss.height })) {
+            if (this.boss && this.phase === 'boss' &&
+                proj.type !== 'boss_bullet' && proj.type !== 'homing_missile' && // Ignore boss's own attacks
+                Physics.checkCollision(proj, { x: this.boss.x, y: this.boss.y, width: this.boss.width, height: this.boss.height })) {
+
                 this.boss.hp -= (proj.type === 'beam' ? 0.5 : 1);
                 if (this.boss.hp <= 0) this.gameWin();
                 if (proj.type !== 'beam') proj.active = false;
@@ -189,8 +192,13 @@ export class Game {
         this.floatingTexts.forEach(text => text.update(deltaTime));
 
         // Weapon Firing Logic
-        if (this.player.isAttacking) {
+        // If hasBeam, fire beam instead of dash
+        if (this.player.isAttacking && this.player.hasBeam) {
             this.fireWeapon(deltaTime);
+            // Stop player movement during beam fire? Or allow movement?
+            // User said "Beam and Body Slam should not coexist".
+            // If we fire beam, we probably shouldn't be dashing forward at high speed.
+            // But Player.update handles movement.
         }
 
         // Remove inactive entities
@@ -218,6 +226,12 @@ export class Game {
                     this.projectiles.push(new Projectile(attack.x, attack.y, attack.vx, attack.vy, 'boss_bullet'));
                 }
 
+                // Poll for new missiles
+                const newMissiles = this.boss.pollProjectiles();
+                newMissiles.forEach(m => {
+                    this.projectiles.push(new Projectile(m.x, m.y, m.vx, m.vy, m.type));
+                });
+
                 // Boss Collision
                 if (Physics.checkCollision(this.player, { x: this.boss.x, y: this.boss.y, width: this.boss.width, height: this.boss.height })) {
                     if (this.player.isAttacking) {
@@ -237,7 +251,7 @@ export class Game {
 
                 // Boss Projectile vs Player
                 this.projectiles.forEach(proj => {
-                    if (proj.type === 'boss_bullet' && proj.active && Physics.checkCircleCollision(this.player, proj)) {
+                    if ((proj.type === 'boss_bullet' || proj.type === 'homing_missile') && proj.active && Physics.checkCircleCollision(this.player, proj)) {
                         if (!this.player.invincible) {
                             this.player.hp -= 5;
                             if (this.player.hp <= 0) {
@@ -309,12 +323,18 @@ export class Game {
     }
 
     handleCollision(player, block) {
-        // Invincibility or Shake Attack
-        if (player.invincible || (player.isShaking && !player.isCharging && !player.isAttacking)) {
-            block.hp = 0; // Instantly break
-            block.active = false;
-            this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
-            this.score += 100;
+        // Invincibility or Shake Attack or High Stats (Body Slam)
+        if (player.invincible || (player.isShaking && !player.isCharging && !player.isAttacking) || player.canBreakOnContact) {
+            block.hp -= player.atk; // Deal ATK damage on contact
+
+            if (block.hp <= 0) {
+                block.active = false;
+                this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
+                this.score += 100;
+            } else {
+                // Slight pushback if not broken immediately
+                player.y += 2;
+            }
             return;
         }
 
@@ -346,12 +366,15 @@ export class Game {
         let type = 'hp';
         if (blockType === 'resource') {
             const rand = Math.random();
-            if (rand < 0.33) type = 'atk';
-            else if (rand < 0.66) type = 'spd';
-            else type = 'def';
+            if (rand < 0.20) type = 'atk';
+            else if (rand < 0.40) type = 'spd';
+            else if (rand < 0.60) type = 'def';
+            else type = 'beam'; // 40% chance for beam from resource
         } else {
-            if (Math.random() > 0.95) type = 'invincible'; // Rare invincibility
-            else if (Math.random() > 0.7) type = 'hp';
+            const rand = Math.random();
+            if (rand > 0.95) type = 'invincible'; // Rare invincibility
+            else if (rand > 0.90) type = 'beam'; // 5% chance from normal blocks
+            else if (rand > 0.7) type = 'hp';
             else return;
         }
 
@@ -366,8 +389,11 @@ export class Game {
         if (item.type === 'invincible') {
             this.player.invincible = true;
             this.player.invincibleTimer = 5.0;
-            this.player.speed = 800; // Super speed
+            // this.player.speed = 800; // Removed direct speed set
             text = "INVINCIBLE!";
+        } else if (item.type === 'beam') {
+            this.player.upgrade('beam');
+            text = "BEAM UNLOCKED!";
         } else {
             this.player.upgrade(item.type);
             text = `+${item.type.toUpperCase()}`;
@@ -380,32 +406,23 @@ export class Game {
 
     fireWeapon(deltaTime) {
         this.player.weaponTimer += deltaTime;
-        const type = this.player.weaponType;
+        // Always beam if hasBeam
 
-        if (type === 'beam') {
-            // Continuous beam
-            if (this.player.weaponTimer > 0.05) {
-                this.projectiles.push(new Projectile(this.player.x, this.player.y - 20, 0, -800, 'beam'));
-                this.player.weaponTimer = 0;
-            }
-        } else if (type === 'gun') {
-            // Rapid fire
-            if (this.player.weaponTimer > 0.1) {
-                this.projectiles.push(new Projectile(this.player.x - 10, this.player.y, -50, -600, 'bullet'));
-                this.projectiles.push(new Projectile(this.player.x + 10, this.player.y, 50, -600, 'bullet'));
-                this.player.weaponTimer = 0;
-            }
+        // Continuous beam
+        if (this.player.weaponTimer > 0.05) {
+            this.projectiles.push(new Projectile(this.player.x, this.player.y - 20, 0, -800, 'beam'));
+            this.player.weaponTimer = 0;
         }
-        // Dash and Sword are handled in Player movement/collision
     }
 
     updateHUD() {
         document.getElementById('score-val').innerText = this.score;
         document.getElementById('time-val').innerText = Math.ceil(this.gameTime);
         document.getElementById('hp-val').innerText = Math.max(0, Math.floor(this.player.hp));
-        document.getElementById('atk-val').innerText = this.player.atk;
-        document.getElementById('spd-val').innerText = Math.floor(this.player.speed);
-        document.getElementById('def-val').innerText = this.player.def;
+        // Show Counts instead of raw values
+        document.getElementById('atk-val').innerText = this.player.atkCount;
+        document.getElementById('spd-val').innerText = this.player.spdCount;
+        document.getElementById('def-val').innerText = this.player.defCount;
     }
 
     draw() {

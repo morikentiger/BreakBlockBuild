@@ -117,9 +117,61 @@ export class Renderer {
         this.ctx.shadowBlur = 10;
         this.ctx.shadowColor = item.color;
 
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
-        this.ctx.fill();
+        // Shape based on type
+        if (item.type === 'atk') {
+            // Spiky Star
+            this.ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                this.ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * item.radius,
+                    Math.sin((18 + i * 72) * Math.PI / 180) * item.radius);
+                this.ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * (item.radius / 2),
+                    Math.sin((54 + i * 72) * Math.PI / 180) * (item.radius / 2));
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+        } else if (item.type === 'spd') {
+            // Lightning Bolt (Simplified Triangle/Zigzag)
+            this.ctx.beginPath();
+            this.ctx.moveTo(5, -item.radius);
+            this.ctx.lineTo(-5, 0);
+            this.ctx.lineTo(5, 0);
+            this.ctx.lineTo(-5, item.radius);
+            this.ctx.closePath();
+            this.ctx.fill();
+        } else if (item.type === 'hp') {
+            // Heart
+            this.ctx.beginPath();
+            const topCurveHeight = item.radius * 0.3;
+            this.ctx.moveTo(0, item.radius * 0.3);
+            this.ctx.bezierCurveTo(0, -item.radius * 0.5, -item.radius, -item.radius * 0.5, -item.radius, item.radius * 0.3);
+            this.ctx.bezierCurveTo(-item.radius, item.radius * 0.8, 0, item.radius, 0, item.radius);
+            this.ctx.bezierCurveTo(0, item.radius, item.radius, item.radius * 0.8, item.radius, item.radius * 0.3);
+            this.ctx.bezierCurveTo(item.radius, -item.radius * 0.5, 0, -item.radius * 0.5, 0, item.radius * 0.3);
+            this.ctx.fill();
+        } else if (item.type === 'invincible') {
+            // Swirly Lollipop (Spiral)
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            for (let i = 0; i < 3; i++) { // Simple spiral approximation
+                this.ctx.arc(0, 0, item.radius * (i + 1) / 3, 0, Math.PI * 2 * 0.8);
+            }
+            this.ctx.stroke();
+        } else if (item.type === 'beam') {
+            // Beam Icon (Circle with line)
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+            this.ctx.fillRect(-2, -item.radius, 4, item.radius * 2);
+        } else {
+            // Default Circle
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
 
         this.ctx.restore();
     }
@@ -146,6 +198,20 @@ export class Renderer {
             this.ctx.beginPath();
             this.ctx.arc(proj.x, proj.y, proj.radius, 0, Math.PI * 2);
             this.ctx.fill();
+        } else if (proj.type === 'homing_missile') {
+            // Draw missile as a triangle pointing in velocity direction
+            this.ctx.fillStyle = proj.color;
+            const angle = Math.atan2(proj.vy, proj.vx);
+            this.ctx.save();
+            this.ctx.translate(proj.x, proj.y);
+            this.ctx.rotate(angle);
+            this.ctx.beginPath();
+            this.ctx.moveTo(10, 0);
+            this.ctx.lineTo(-5, 5);
+            this.ctx.lineTo(-5, -5);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.restore();
         } else {
             // Draw player projectiles as rectangles
             this.ctx.fillStyle = proj.type === 'beam' ? '#00f0ff' : '#ff0055';

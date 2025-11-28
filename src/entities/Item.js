@@ -13,11 +13,12 @@ export class Item {
     getColorByType(type) {
         switch (type) {
             case 'atk': return '#ff0055'; // Red
-            case 'spd': return '#00f0ff'; // Cyan
-            case 'def': return '#ffff00'; // Yellow
-            case 'hp': return '#00ff00'; // Green
-            case 'invincible': return '#ffffff'; // White/Rainbow
-            default: return '#ffffff';
+            case 'spd': return '#ffff00'; // Yellow
+            case 'def': return '#0055ff'; // Blue
+            case 'hp': return '#ff00ff'; // Magenta
+            case 'invincible': return '#ffffff'; // White
+            case 'beam': return '#00f0ff'; // Cyan
+            default: return '#aaaaaa';
         }
     }
 
