@@ -60,12 +60,12 @@ export class Game {
         this.floatingTexts = [];
         this.score = 0;
         this.spawnTimer = 0;
-        this.baseScrollSpeed = 30; // Slower start (was 60)
+        this.baseScrollSpeed = 70; // Faster for better feel
         this.scrollSpeed = this.baseScrollSpeed;
         // Block Height is Player Radius * 4 = 80.
         // Initial Speed is 60 px/s.
         // Interval = 80 / 60 = 1.33s
-        this.spawnInterval = 1.33;
+        this.spawnInterval = 1.0; // Faster spawns to match speed
 
         this.gameTime = 60; // 60 Seconds for scavenge phase
         this.phase = 'scavenge'; // 'scavenge', 'boss'
@@ -156,6 +156,20 @@ export class Game {
         // Update Items
         this.items.forEach(item => {
             item.update(deltaTime, this.scrollSpeed);
+
+            // Magnet attraction
+            if (this.player.hasMagnet && item.active) {
+                const dx = this.player.x - item.x;
+                const dy = this.player.y - item.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < this.player.magnetRange) {
+                    // Pull item toward player
+                    const pullSpeed = 300;
+                    item.x += (dx / distance) * pullSpeed * deltaTime;
+                    item.y += (dy / distance) * pullSpeed * deltaTime;
+                }
+            }
 
             if (item.active && Physics.checkCircleCollision(this.player, item)) {
                 this.collectItem(item);
@@ -333,6 +347,9 @@ export class Game {
     spawnBlock() {
         if (this.phase !== 'scavenge') return;
 
+        // Performance Limit: Max 50 active blocks
+        if (this.blocks.length > 50) return;
+
         const blockWidth = this.player.radius * 4; // 80px
         const cols = Math.floor(this.width / blockWidth);
         const startX = (this.width - (cols * blockWidth)) / 2;
@@ -416,10 +433,11 @@ export class Game {
         let type = 'hp';
         if (blockType === 'resource') {
             const rand = Math.random();
-            if (rand < 0.20) type = 'atk';
-            else if (rand < 0.40) type = 'spd';
-            else if (rand < 0.60) type = 'def';
-            else type = 'beam'; // 40% chance for beam from resource
+            if (rand < 0.15) type = 'atk';
+            else if (rand < 0.30) type = 'spd';
+            else if (rand < 0.45) type = 'def';
+            else if (rand < 0.70) type = 'beam';
+            else type = 'magnet'; // 30% chance for magnet from green blocks
         } else if (blockType === 'hard') {
             // Red block - chance for sword
             const rand = Math.random();
@@ -452,6 +470,9 @@ export class Game {
         } else if (item.type === 'sword') {
             this.player.upgrade('sword');
             text = "SWORD EQUIPPED!";
+        } else if (item.type === 'magnet') {
+            this.player.upgrade('magnet');
+            text = "MAGNET ACTIVE!";
         } else {
             this.player.upgrade(item.type);
             text = `+${item.type.toUpperCase()}`;

@@ -19,6 +19,7 @@ export class Item {
             case 'invincible': return '#ffffff'; // White
             case 'beam': return '#00f0ff'; // Cyan
             case 'sword': return '#ffaa00'; // Orange-Gold
+            case 'magnet': return '#ff00ff'; // Magenta
             default: return '#aaaaaa';
         }
     }

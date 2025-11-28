@@ -208,6 +208,18 @@ export class Renderer {
             this.ctx.lineTo(-item.radius / 3, 0);
             this.ctx.closePath();
             this.ctx.fill();
+        } else if (item.type === 'magnet') {
+            // Magnet Icon (U-shape)
+            this.ctx.strokeStyle = item.color;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-item.radius * 0.6, -item.radius * 0.5);
+            this.ctx.lineTo(-item.radius * 0.6, item.radius * 0.5);
+            this.ctx.lineTo(-item.radius * 0.2, item.radius * 0.5);
+            this.ctx.moveTo(item.radius * 0.6, -item.radius * 0.5);
+            this.ctx.lineTo(item.radius * 0.6, item.radius * 0.5);
+            this.ctx.lineTo(item.radius * 0.2, item.radius * 0.5);
+            this.ctx.stroke();
         } else {
             // Default Circle
             this.ctx.beginPath();

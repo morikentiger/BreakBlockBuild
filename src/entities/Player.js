@@ -41,6 +41,12 @@ export class Player {
         this.swordAngle = 0;
         this.swordRadius = 70; // Distance from player
         this.swordSize = 20;
+
+        // Magnet Mechanics
+        this.hasMagnet = false;
+        this.magnetTimer = 0;
+        this.magnetDuration = 10; // 10 seconds
+        this.magnetRange = 200; // Attraction range
     }
 
     // Exponential Stat Getters
@@ -88,10 +94,22 @@ export class Player {
             case 'sword':
                 this.swordCount++;
                 break;
+            case 'magnet':
+                this.hasMagnet = true;
+                this.magnetTimer = this.magnetDuration;
+                break;
         }
     }
 
     update(deltaTime, input) {
+        // Magnet Timer
+        if (this.hasMagnet) {
+            this.magnetTimer -= deltaTime;
+            if (this.magnetTimer <= 0) {
+                this.hasMagnet = false;
+            }
+        }
+
         // Invincibility
         if (this.invincible) {
             this.invincibleTimer -= deltaTime;
