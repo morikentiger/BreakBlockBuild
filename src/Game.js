@@ -35,6 +35,10 @@ export class Game {
         this.closeTutorialBtn.addEventListener('click', () => this.hideTutorial());
         this.restartBtn.addEventListener('click', () => this.restart());
 
+        // Antigravity share button
+        this.shareBtn = document.getElementById('share-btn');
+        this.shareBtn.addEventListener('click', () => this.shareToAntigravity());
+
         this.reset();
     }
 
@@ -314,6 +318,18 @@ export class Game {
         document.getElementById('game-over-screen').classList.remove('hidden');
         document.querySelector('#game-over-screen h1').innerText = "YOU WIN!";
         document.getElementById('final-score').innerText = this.score;
+    }
+
+    shareToAntigravity() {
+        const score = this.score;
+        const gameName = 'BreakBlockBuild';
+        const gameUrl = 'https://morikentiger.github.io/BreakBlockBuild/';
+
+        // Antigravity URL with score parameter
+        const antigravityUrl = `https://morikentiger.github.io/Antigravity/?score=${score}&game=${gameName}`;
+
+        // Open in new tab
+        window.open(antigravityUrl, '_blank');
     }
 
     spawnBlock() {
