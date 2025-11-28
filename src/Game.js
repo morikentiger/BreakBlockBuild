@@ -56,7 +56,7 @@ export class Game {
         this.floatingTexts = [];
         this.score = 0;
         this.spawnTimer = 0;
-        this.baseScrollSpeed = 60; // Start slower
+        this.baseScrollSpeed = 30; // Slower start (was 60)
         this.scrollSpeed = this.baseScrollSpeed;
         // Block Height is Player Radius * 4 = 80.
         // Initial Speed is 60 px/s.
@@ -126,7 +126,7 @@ export class Game {
         // Dynamic Difficulty: Increase speed based on player power
         if (this.phase === 'scavenge') {
             const playerPower = this.player.atk + this.player.speed / 100 + this.player.def;
-            this.scrollSpeed = this.baseScrollSpeed + (playerPower * 8); // Gradual increase
+            this.scrollSpeed = this.baseScrollSpeed + (playerPower * 2); // Much slower increase (was 8)
         }
 
         // Block Spawning
@@ -192,31 +192,39 @@ export class Game {
         this.floatingTexts.forEach(text => text.update(deltaTime));
 
         // Sword Collision Logic
-        if (this.player.hasSword) {
-            const swordX = this.player.x + Math.cos(this.player.swordAngle) * this.player.swordRadius;
-            const swordY = this.player.y + Math.sin(this.player.swordAngle) * this.player.swordRadius;
+        if (this.player.swordCount > 0) {
+            const swordCount = this.player.swordCount;
+            const swordRadius = this.player.swordRadius;
             const swordSize = this.player.swordSize;
 
-            // Sword vs Blocks
-            this.blocks.forEach(block => {
-                if (block.active && Physics.checkCollision({ x: swordX, y: swordY, radius: swordSize }, block)) {
-                    block.hp = 0;
-                    block.active = false;
-                    this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
-                    this.score += 100;
-                    this.spawnFloatingText(block.x, block.y, "SLASH!", "#ffaa00");
-                }
-            });
+            for (let i = 0; i < swordCount; i++) {
+                const angleOffset = (Math.PI * 2 / swordCount) * i;
+                const currentAngle = this.player.swordAngle + angleOffset;
 
-            // Sword vs Projectiles (Boss bullets)
-            this.projectiles.forEach(proj => {
-                if (proj.active && (proj.type === 'boss_bullet' || proj.type === 'homing_missile')) {
-                    if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize }, proj)) {
-                        proj.active = false; // Destroy bullet
-                        this.spawnFloatingText(proj.x, proj.y, "BLOCK!", "#ffaa00");
+                const swordX = this.player.x + Math.cos(currentAngle) * swordRadius;
+                const swordY = this.player.y + Math.sin(currentAngle) * swordRadius;
+
+                // Sword vs Blocks
+                this.blocks.forEach(block => {
+                    if (block.active && Physics.checkCollision({ x: swordX, y: swordY, radius: swordSize }, block)) {
+                        block.hp = 0;
+                        block.active = false;
+                        this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
+                        this.score += 100;
+                        this.spawnFloatingText(block.x, block.y, "SLASH!", "#ffaa00");
                     }
-                }
-            });
+                });
+
+                // Sword vs Projectiles (Boss bullets)
+                this.projectiles.forEach(proj => {
+                    if (proj.active && (proj.type === 'boss_bullet' || proj.type === 'homing_missile')) {
+                        if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize }, proj)) {
+                            proj.active = false; // Destroy bullet
+                            this.spawnFloatingText(proj.x, proj.y, "BLOCK!", "#ffaa00");
+                        }
+                    }
+                });
+            }
         }
 
         // Weapon Firing Logic

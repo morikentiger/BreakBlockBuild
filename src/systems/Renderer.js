@@ -72,29 +72,34 @@ export class Renderer {
         }
 
         // Sword Visuals
-        if (player.hasSword) {
-            const swordX = Math.cos(player.swordAngle) * player.swordRadius;
-            const swordY = Math.sin(player.swordAngle) * player.swordRadius;
+        if (player.swordCount > 0) {
+            for (let i = 0; i < player.swordCount; i++) {
+                const angleOffset = (Math.PI * 2 / player.swordCount) * i;
+                const currentAngle = player.swordAngle + angleOffset;
 
-            this.ctx.save();
-            this.ctx.translate(swordX, swordY);
-            this.ctx.rotate(player.swordAngle + Math.PI / 2); // Rotate sword to face direction of orbit
+                const swordX = Math.cos(currentAngle) * player.swordRadius;
+                const swordY = Math.sin(currentAngle) * player.swordRadius;
 
-            // Draw Sword
-            this.ctx.fillStyle = '#ffaa00'; // Gold
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = '#ffaa00';
+                this.ctx.save();
+                this.ctx.translate(swordX, swordY);
+                this.ctx.rotate(currentAngle + Math.PI / 2); // Rotate sword to face direction of orbit
 
-            // Blade
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, -20);
-            this.ctx.lineTo(5, 0);
-            this.ctx.lineTo(0, 20);
-            this.ctx.lineTo(-5, 0);
-            this.ctx.closePath();
-            this.ctx.fill();
+                // Draw Sword
+                this.ctx.fillStyle = '#ffaa00'; // Gold
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = '#ffaa00';
 
-            this.ctx.restore();
+                // Blade
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, -20);
+                this.ctx.lineTo(5, 0);
+                this.ctx.lineTo(0, 20);
+                this.ctx.lineTo(-5, 0);
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                this.ctx.restore();
+            }
         }
 
         this.ctx.restore();

@@ -8,6 +8,7 @@ export class Player {
         this.atkCount = 0;
         this.spdCount = 0;
         this.defCount = 0;
+        this.hpCount = 0; // Track HP items for exponential gain
         this.hp = 100;
 
         this.baseSpeed = 400; // Faster start (was 300)
@@ -36,9 +37,9 @@ export class Player {
         this.weaponTimer = 0; // Fix for beam firing
 
         // Sword Mechanics
-        this.hasSword = false;
+        this.swordCount = 0; // Multiple swords
         this.swordAngle = 0;
-        this.swordRadius = 60; // Distance from player
+        this.swordRadius = 70; // Distance from player
         this.swordSize = 20;
     }
 
@@ -75,13 +76,17 @@ export class Player {
                 this.defCount++;
                 break;
             case 'hp':
-                this.hp = Math.min(this.hp + 20, 100);
+                this.hpCount++;
+                // Exponential HP gain: Base 20 * (1.5 ^ count)
+                // This allows HP to skyrocket
+                const hpGain = 20 * Math.pow(1.5, this.hpCount);
+                this.hp += hpGain;
                 break;
             case 'beam':
                 this.hasBeam = true;
                 break;
             case 'sword':
-                this.hasSword = true;
+                this.swordCount++;
                 break;
         }
     }
@@ -196,7 +201,7 @@ export class Player {
         }
 
         // Sword Orbit
-        if (this.hasSword) {
+        if (this.swordCount > 0) {
             this.swordAngle += deltaTime * 5; // Rotation speed
         }
 
