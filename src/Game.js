@@ -127,11 +127,9 @@ export class Game {
     update(deltaTime) {
         this.player.update(deltaTime, this.input);
 
-        // Dynamic Difficulty: Increase speed based on player power
-        if (this.phase === 'scavenge') {
-            const playerPower = this.player.atk + this.player.speed / 100 + this.player.def;
-            this.scrollSpeed = this.baseScrollSpeed + (playerPower * 2); // Much slower increase (was 8)
-        }
+        // Keep scroll speed constant - no dynamic difficulty
+        // this.scrollSpeed stays at this.baseScrollSpeed
+
 
         // Block Spawning
         this.spawnTimer += deltaTime;
