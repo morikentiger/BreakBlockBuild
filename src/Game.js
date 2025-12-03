@@ -242,7 +242,10 @@ export class Game {
                 proj.type !== 'boss_bullet' && proj.type !== 'homing_missile' && // Ignore boss's own attacks
                 Physics.checkCollision(proj, { x: this.boss.x, y: this.boss.y, width: this.boss.width, height: this.boss.height })) {
 
-                this.boss.hp -= (proj.type === 'beam' ? 0.5 : 1);
+                const damage = (proj.type === 'beam' ? 0.5 : 1);
+                this.boss.hp -= damage;
+                this.score += Math.floor(damage * 10); // 10 points per damage (5 for beam tick)
+                this.spawnFloatingText(this.boss.x + this.boss.width / 2, this.boss.y, `+${Math.floor(damage * 10)}`, "#00f0ff");
                 if (this.boss.hp <= 0) this.gameWin();
                 if (proj.type !== 'beam') proj.active = false;
             }
@@ -280,10 +283,24 @@ export class Game {
                     if (proj.active && (proj.type === 'boss_bullet' || proj.type === 'homing_missile')) {
                         if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize }, proj)) {
                             proj.active = false; // Destroy bullet
-                            this.spawnFloatingText(proj.x, proj.y, "BLOCK!", "#ffaa00");
+                            this.score += 50; // Score for intercepting missiles
+                            this.spawnFloatingText(proj.x, proj.y, "BLOCK! +50", "#ffaa00");
                         }
                     }
                 });
+
+                // Sword vs Boss
+                if (this.boss && this.phase === 'boss') {
+                    if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize },
+                        { x: this.boss.x + this.boss.width / 2, y: this.boss.y + this.boss.height / 2, radius: this.boss.width / 2 })) {
+                        const damage = this.player.atk * 0.5; // Sword does half ATK damage per tick
+                        this.boss.hp -= damage;
+                        this.score += Math.floor(damage * 10);
+                        if (this.boss.hp <= 0) {
+                            this.gameWin();
+                        }
+                    }
+                }
             }
         }
 
@@ -357,7 +374,10 @@ export class Game {
                 // Boss Collision
                 if (Physics.checkCollision(this.player, { x: this.boss.x, y: this.boss.y, width: this.boss.width, height: this.boss.height })) {
                     if (this.player.isAttacking) {
-                        this.boss.hp -= this.player.atk;
+                        const damage = this.player.atk;
+                        this.boss.hp -= damage;
+                        this.score += Math.floor(damage * 10); // Score for charge attack damage
+                        this.spawnFloatingText(this.boss.x + this.boss.width / 2, this.boss.y, `+${Math.floor(damage * 10)}`, "#ff0055");
                         // Push back boss or player
                         if (this.boss.hp <= 0) {
                             this.gameWin();
