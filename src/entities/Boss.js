@@ -4,8 +4,8 @@ export class Boss {
         this.y = y;
         this.width = 100;
         this.height = 100;
-        this.hp = 1000;
-        this.maxHp = 1000;
+        this.hp = 5000; // Massively increased from 1000
+        this.maxHp = 5000;
         this.active = true;
         this.color = '#ff0000';
         this.state = 'idle'; // idle, attack, move, enraged
@@ -36,6 +36,13 @@ export class Boss {
         this.boomerangTimer = 0;
         this.boomerangCooldown = 7.0;
 
+        // Ultimate Attack - "DIE!"
+        this.ultimateTimer = 0;
+        this.ultimateCooldown = 20.0; // Every 20 seconds
+        this.isChargingUltimate = false;
+        this.ultimateChargeTime = 0;
+        this.ultimateUsed = false;
+
         // Phase system
         this.phase = 1; // 1, 2, 3
         this.enraged = false;
@@ -55,6 +62,7 @@ export class Boss {
         this.beamTimer += deltaTime;
         this.barrageTimer += deltaTime;
         this.boomerangTimer += deltaTime;
+        this.ultimateTimer += deltaTime;
 
         // Phase transitions based on HP
         if (this.hp < this.maxHp * 0.66 && this.phase === 1) {
@@ -105,6 +113,24 @@ export class Boss {
     }
 
     updateAttacks(deltaTime, player) {
+        // Ultimate Attack - "死ぬが良い！" (DIE!)
+        // Triggers in Phase 3 or when HP is low
+        if ((this.phase >= 3 || this.hp < this.maxHp * 0.2) &&
+            this.ultimateTimer > this.ultimateCooldown &&
+            !this.isChargingUltimate) {
+            this.isChargingUltimate = true;
+            this.ultimateChargeTime = 0;
+            this.ultimateTimer = 0;
+        }
+
+        if (this.isChargingUltimate) {
+            this.ultimateChargeTime += deltaTime;
+            if (this.ultimateChargeTime > 2.0) { // 2 second charge with warning
+                this.fireUltimate(player);
+                this.isChargingUltimate = false;
+            }
+        }
+
         // Missile Attack
         if (this.missileTimer > this.missileCooldown) {
             this.isFiringMissiles = true;
@@ -231,6 +257,26 @@ export class Boss {
         });
     }
 
+    fireUltimate(player) {
+        // "死ぬが良い！" - Screen-wide death ray attack
+        // Fire massive beams covering the entire screen width
+        const screenWidth = window.innerWidth || 1000;
+        const beamCount = 30; // Cover entire screen
+        const spacing = screenWidth / beamCount;
+
+        for (let i = 0; i < beamCount; i++) {
+            this.projectilesQueue.push({
+                x: i * spacing,
+                y: this.y + this.height,
+                vx: 0,
+                vy: 1000, // Very fast
+                type: 'death_ray',
+                damage: 9999 // Instant kill unless invincible
+            });
+        }
+    }
+
+
     pollProjectiles() {
         const projs = [...this.projectilesQueue];
         this.projectilesQueue = [];
@@ -279,5 +325,13 @@ export class Boss {
 
     getBeamChargeProgress() {
         return Math.min(this.beamChargeTime / 1.0, 1.0);
+    }
+
+    isChargingUltimateAttack() {
+        return this.isChargingUltimate;
+    }
+
+    getUltimateChargeProgress() {
+        return Math.min(this.ultimateChargeTime / 2.0, 1.0);
     }
 }

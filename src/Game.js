@@ -280,7 +280,7 @@ export class Game {
 
                 // Sword vs Projectiles (Boss bullets)
                 this.projectiles.forEach(proj => {
-                    const isBossProjectile = ['boss_bullet', 'homing_missile', 'boss_beam', 'boomerang'].includes(proj.type);
+                    const isBossProjectile = ['boss_bullet', 'homing_missile', 'boss_beam', 'boomerang', 'death_ray'].includes(proj.type);
                     if (proj.active && isBossProjectile) {
                         if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize }, proj)) {
                             proj.active = false; // Destroy bullet
@@ -394,7 +394,7 @@ export class Game {
 
                 // Boss Projectile vs Player
                 this.projectiles.forEach(proj => {
-                    const isBossProjectile = ['boss_bullet', 'homing_missile', 'boss_beam', 'boomerang'].includes(proj.type);
+                    const isBossProjectile = ['boss_bullet', 'homing_missile', 'boss_beam', 'boomerang', 'death_ray'].includes(proj.type);
                     if (isBossProjectile && proj.active && Physics.checkCircleCollision(this.player, proj)) {
                         if (!this.player.invincible) {
                             const damage = proj.damage || (proj.type === 'boss_beam' ? 20 : 5);

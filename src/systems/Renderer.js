@@ -281,6 +281,44 @@ export class Renderer {
             this.ctx.fillText('BEAM CHARGING!', boss.x + boss.width / 2, boss.y - 30);
         }
 
+        // Ultimate Attack Warning - "死ぬが良い！"
+        if (boss.isChargingUltimateAttack()) {
+            const chargeProgress = boss.getUltimateChargeProgress();
+
+            // Screen flash effect
+            this.ctx.fillStyle = `rgba(255, 0, 0, ${chargeProgress * 0.3})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+
+            // Dramatic warning text
+            this.ctx.save();
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 3;
+            this.ctx.font = 'bold 60px Inter';
+            this.ctx.textAlign = 'center';
+
+            // Flashing effect
+            const flash = Math.sin(Date.now() / 100) > 0;
+            if (flash) {
+                this.ctx.shadowBlur = 30;
+                this.ctx.shadowColor = '#ff0000';
+                this.ctx.strokeText('死ぬが良い！', this.width / 2, this.height / 2);
+                this.ctx.fillText('死ぬが良い！', this.width / 2, this.height / 2);
+            }
+
+            // Charge bar
+            const barWidth = 400;
+            const barX = this.width / 2 - barWidth / 2;
+            const barY = this.height / 2 + 50;
+
+            this.ctx.fillStyle = '#333';
+            this.ctx.fillRect(barX, barY, barWidth, 20);
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.fillRect(barX, barY, barWidth * chargeProgress, 20);
+
+            this.ctx.restore();
+        }
+
         // Sword shield
         if (boss.swordCount > 0) {
             const swordPositions = boss.getSwordPositions();
@@ -346,6 +384,12 @@ export class Renderer {
             this.ctx.fillRect(-2, -12, 4, 24);
 
             this.ctx.restore();
+        } else if (proj.type === 'death_ray') {
+            // Draw death ray as massive red beam
+            this.ctx.fillStyle = proj.color;
+            this.ctx.shadowBlur = 25;
+            this.ctx.shadowColor = proj.color;
+            this.ctx.fillRect(proj.x - proj.width / 2, proj.y - proj.height / 2, proj.width, proj.height);
         } else {
             // Draw player projectiles as rectangles
             this.ctx.fillStyle = proj.type === 'beam' ? '#00f0ff' : '#ff0055';

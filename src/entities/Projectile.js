@@ -4,7 +4,7 @@ export class Projectile {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.type = type; // 'beam', 'bullet', 'boss_bullet', 'homing_missile', 'boss_beam', 'boomerang'
+        this.type = type; // 'beam', 'bullet', 'boss_bullet', 'homing_missile', 'boss_beam', 'boomerang', 'death_ray'
         this.active = true;
         this.damage = damage; // Custom damage for special attacks
 
@@ -17,6 +17,10 @@ export class Projectile {
             this.width = 15;
             this.height = 30;
             this.radius = 10;
+        } else if (type === 'death_ray') {
+            this.width = 25;
+            this.height = 50;
+            this.radius = 15;
         } else if (type === 'boomerang') {
             this.width = 20;
             this.height = 20;
@@ -34,6 +38,7 @@ export class Projectile {
         if (type === 'boss_bullet') this.color = '#ff0055';
         else if (type === 'homing_missile') this.color = '#ffaa00';
         else if (type === 'boss_beam') this.color = '#ff00ff';
+        else if (type === 'death_ray') this.color = '#ff0000';
         else if (type === 'boomerang') this.color = '#00ffff';
         else this.color = '#fff';
     }
