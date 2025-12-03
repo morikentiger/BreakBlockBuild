@@ -4,19 +4,43 @@ export class Input {
         this.joystick = { x: 0, y: 0, active: false };
         this.chargeActive = false;
 
+        // Bind handlers for proper cleanup
+        this.keydownHandler = (e) => {
+            this.keys[e.code] = true;
+            if (e.code === 'Space') this.chargeActive = true;
+        };
+        this.keyupHandler = (e) => {
+            this.keys[e.code] = false;
+            if (e.code === 'Space') this.chargeActive = false;
+        };
+
         this.setupKeyboard();
         this.setupTouch();
     }
 
+    destroy() {
+        // Remove keyboard listeners
+        window.removeEventListener('keydown', this.keydownHandler);
+        window.removeEventListener('keyup', this.keyupHandler);
+
+        // Remove mouse listeners
+        if (this.mousemoveHandler) {
+            window.removeEventListener('mousemove', this.mousemoveHandler);
+        }
+        if (this.mouseupHandler) {
+            window.removeEventListener('mouseup', this.mouseupHandler);
+        }
+
+        // Clear joystick visual
+        const knob = document.querySelector('.joystick-knob');
+        if (knob) {
+            knob.remove();
+        }
+    }
+
     setupKeyboard() {
-        window.addEventListener('keydown', (e) => {
-            this.keys[e.code] = true;
-            if (e.code === 'Space') this.chargeActive = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            this.keys[e.code] = false;
-            if (e.code === 'Space') this.chargeActive = false;
-        });
+        window.addEventListener('keydown', this.keydownHandler);
+        window.addEventListener('keyup', this.keyupHandler);
     }
 
     setupTouch() {
@@ -78,25 +102,30 @@ export class Input {
             handleEnd();
         });
 
+
         // Mouse Events
         joystickZone.addEventListener('mousedown', (e) => {
             e.preventDefault();
             handleStart(e.clientX, e.clientY);
         });
 
-        window.addEventListener('mousemove', (e) => {
+        this.mousemoveHandler = (e) => {
             if (this.joystick.active) {
                 e.preventDefault();
                 handleMove(e.clientX, e.clientY);
             }
-        });
+        };
 
-        window.addEventListener('mouseup', (e) => {
+        this.mouseupHandler = (e) => {
             if (this.joystick.active) {
                 e.preventDefault();
                 handleEnd();
             }
-        });
+        };
+
+        window.addEventListener('mousemove', this.mousemoveHandler);
+        window.addEventListener('mouseup', this.mouseupHandler);
+
 
         // Action Button Logic
         const activateCharge = (e) => {

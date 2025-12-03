@@ -11,8 +11,7 @@ export class Renderer {
     }
 
     clear() {
-        this.ctx.clearRect(0, 0, this.width, this.height);
-        // Draw background grid or effect
+        // Single operation for better performance
         this.ctx.fillStyle = '#0d0d0d';
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
@@ -21,15 +20,20 @@ export class Renderer {
         this.ctx.save();
         this.ctx.translate(player.x, player.y);
 
-        // Glow effect
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = player.color;
+        // Glow effect - only when invincible for performance
+        if (player.invincible) {
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowColor = player.color;
+        }
 
         // Body
         this.ctx.fillStyle = player.invincible ? `hsl(${Date.now() % 360}, 100%, 50%)` : player.color;
         this.ctx.beginPath();
         this.ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
         this.ctx.fill();
+
+        // Reset shadow for other elements
+        this.ctx.shadowBlur = 0;
 
         // Shake Effect
         if (player.isShaking) {
@@ -49,10 +53,10 @@ export class Renderer {
             this.ctx.stroke();
         }
 
-        // Visual Evolution: Attack Spikes
+        // Visual Evolution: Attack Spikes - limit to reasonable number
         if (player.atk > 3) {
             this.ctx.fillStyle = '#ff0055';
-            const spikeCount = player.atk;
+            const spikeCount = Math.min(player.atk, 12); // Cap at 12 for performance
             for (let i = 0; i < spikeCount; i++) {
                 const angle = (Math.PI * 2 / spikeCount) * i;
                 const sx = Math.cos(angle) * (player.radius + 10);
@@ -73,6 +77,7 @@ export class Renderer {
 
         // Sword Visuals
         if (player.swordCount > 0) {
+            this.ctx.fillStyle = '#ffaa00'; // Gold
             for (let i = 0; i < player.swordCount; i++) {
                 const angleOffset = (Math.PI * 2 / player.swordCount) * i;
                 const currentAngle = player.swordAngle + angleOffset;
@@ -82,14 +87,9 @@ export class Renderer {
 
                 this.ctx.save();
                 this.ctx.translate(swordX, swordY);
-                this.ctx.rotate(currentAngle + Math.PI / 2); // Rotate sword to face direction of orbit
+                this.ctx.rotate(currentAngle + Math.PI / 2);
 
-                // Draw Sword
-                this.ctx.fillStyle = '#ffaa00'; // Gold
-                this.ctx.shadowBlur = 15;
-                this.ctx.shadowColor = '#ffaa00';
-
-                // Blade
+                // Draw Sword - simplified without shadow
                 this.ctx.beginPath();
                 this.ctx.moveTo(0, -20);
                 this.ctx.lineTo(5, 0);
@@ -145,8 +145,9 @@ export class Renderer {
         this.ctx.scale(scale, scale);
 
         this.ctx.fillStyle = item.color;
-        this.ctx.shadowBlur = 10;
-        this.ctx.shadowColor = item.color;
+        // Reduce shadow blur for performance
+        // this.ctx.shadowBlur = 10;
+        // this.ctx.shadowColor = item.color;
 
         // Shape based on type
         if (item.type === 'atk') {
@@ -243,8 +244,9 @@ export class Renderer {
 
     drawProjectile(proj) {
         this.ctx.save();
-        this.ctx.shadowBlur = 10;
-        this.ctx.shadowColor = proj.color;
+        // Reduce shadow blur for performance
+        // this.ctx.shadowBlur = 10;
+        // this.ctx.shadowColor = proj.color;
 
         if (proj.type === 'boss_bullet') {
             // Draw boss bullets as circles

@@ -15,8 +15,16 @@ export class Game {
         this.width = window.innerWidth;
         this.height = window.innerHeight;
 
+        // Bind methods for proper cleanup
+        this.resizeHandler = this.resize.bind(this);
+        this.startHandler = this.start.bind(this);
+        this.tutorialHandler = this.showTutorial.bind(this);
+        this.closeTutorialHandler = this.hideTutorial.bind(this);
+        this.restartHandler = this.restart.bind(this);
+        this.shareHandler = this.shareToAntigravity.bind(this);
+
         this.resize();
-        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('resize', this.resizeHandler);
 
         this.input = new Input();
         this.renderer = new Renderer(this.ctx, this.width, this.height);
@@ -30,16 +38,40 @@ export class Game {
         this.closeTutorialBtn = document.getElementById('close-tutorial-btn');
         this.restartBtn = document.getElementById('restart-btn');
 
-        this.startBtn.addEventListener('click', () => this.start());
-        this.tutorialBtn.addEventListener('click', () => this.showTutorial());
-        this.closeTutorialBtn.addEventListener('click', () => this.hideTutorial());
-        this.restartBtn.addEventListener('click', () => this.restart());
+        this.startBtn.addEventListener('click', this.startHandler);
+        this.tutorialBtn.addEventListener('click', this.tutorialHandler);
+        this.closeTutorialBtn.addEventListener('click', this.closeTutorialHandler);
+        this.restartBtn.addEventListener('click', this.restartHandler);
 
         // Antigravity share button
         this.shareBtn = document.getElementById('share-btn');
-        this.shareBtn.addEventListener('click', () => this.shareToAntigravity());
+        this.shareBtn.addEventListener('click', this.shareHandler);
 
         this.reset();
+    }
+
+    destroy() {
+        // Cleanup event listeners
+        window.removeEventListener('resize', this.resizeHandler);
+        this.startBtn.removeEventListener('click', this.startHandler);
+        this.tutorialBtn.removeEventListener('click', this.tutorialHandler);
+        this.closeTutorialBtn.removeEventListener('click', this.closeTutorialHandler);
+        this.restartBtn.removeEventListener('click', this.restartHandler);
+        this.shareBtn.removeEventListener('click', this.shareHandler);
+
+        // Cleanup input
+        if (this.input && this.input.destroy) {
+            this.input.destroy();
+        }
+
+        // Clear all game objects
+        this.blocks = [];
+        this.items = [];
+        this.projectiles = [];
+        this.floatingTexts = [];
+        this.boss = null;
+        this.player = null;
+        this.renderer = null;
     }
 
     showTutorial() {
@@ -53,6 +85,12 @@ export class Game {
     }
 
     reset() {
+        // Clear existing objects
+        if (this.blocks) this.blocks.length = 0;
+        if (this.items) this.items.length = 0;
+        if (this.projectiles) this.projectiles.length = 0;
+        if (this.floatingTexts) this.floatingTexts.length = 0;
+
         this.player = new Player(this.width / 2, this.height - 100);
         this.blocks = [];
         this.items = [];
@@ -102,8 +140,14 @@ export class Game {
     }
 
     restart() {
-        this.reset();
-        this.start();
+        // Stop current game loop
+        this.isRunning = false;
+
+        // Small delay to ensure loop stops
+        setTimeout(() => {
+            this.reset();
+            this.start();
+        }, 100);
     }
 
     loop(timestamp) {
@@ -253,11 +297,37 @@ export class Game {
             // But Player.update handles movement.
         }
 
-        // Remove inactive entities
+
+        // Remove inactive entities more aggressively
+        // Filter and nullify references
+        const prevBlocksLength = this.blocks.length;
+        const prevItemsLength = this.items.length;
+        const prevProjectilesLength = this.projectiles.length;
+
         this.blocks = this.blocks.filter(b => b.active && b.y < this.height + 100);
         this.items = this.items.filter(i => i.active && i.y < this.height + 100);
-        this.projectiles = this.projectiles.filter(p => p.active && p.y > -100 && p.y < this.height);
+        this.projectiles = this.projectiles.filter(p => p.active && p.y > -100 && p.y < this.height + 100 && p.x > -100 && p.x < this.width + 100);
         this.floatingTexts = this.floatingTexts.filter(t => t.active);
+
+        // Performance limits - cap array sizes
+        const MAX_BLOCKS = 40;
+        const MAX_ITEMS = 30;
+        const MAX_PROJECTILES = 50;
+        const MAX_FLOATING_TEXTS = 20;
+
+        if (this.blocks.length > MAX_BLOCKS) {
+            this.blocks = this.blocks.slice(-MAX_BLOCKS);
+        }
+        if (this.items.length > MAX_ITEMS) {
+            this.items = this.items.slice(-MAX_ITEMS);
+        }
+        if (this.projectiles.length > MAX_PROJECTILES) {
+            this.projectiles = this.projectiles.slice(-MAX_PROJECTILES);
+        }
+        if (this.floatingTexts.length > MAX_FLOATING_TEXTS) {
+            this.floatingTexts = this.floatingTexts.slice(-MAX_FLOATING_TEXTS);
+        }
+
 
         // Update HUD
         this.updateHUD();
@@ -347,8 +417,8 @@ export class Game {
     spawnBlock() {
         if (this.phase !== 'scavenge') return;
 
-        // Performance Limit: Max 50 active blocks
-        if (this.blocks.length > 50) return;
+        // Performance Limit: Max 40 active blocks (reduced for better performance)
+        if (this.blocks.length > 40) return;
 
         const blockWidth = this.player.radius * 4; // 80px
         const cols = Math.floor(this.width / blockWidth);
