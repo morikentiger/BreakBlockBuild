@@ -60,25 +60,25 @@ export class Boss {
     }
 
     fireMissileBurst() {
-        // Fire from left and right sides
-        // Initial velocity: horizontal outwards then curve
+        // Fire from left and right sides, diagonally forward toward screen
         const speed = 150;
+        const diagonalAngle = Math.PI / 4; // 45 degrees
 
-        // Left Missile
+        // Left Missile - shoot diagonally down-right
         this.projectilesQueue.push({
             x: this.x,
             y: this.y + this.height / 2,
-            vx: -speed,
-            vy: 50, // Slight down
+            vx: speed * Math.cos(diagonalAngle), // Right
+            vy: speed * Math.sin(diagonalAngle), // Down
             type: 'homing_missile'
         });
 
-        // Right Missile
+        // Right Missile - shoot diagonally down-left
         this.projectilesQueue.push({
             x: this.x + this.width,
             y: this.y + this.height / 2,
-            vx: speed,
-            vy: 50, // Slight down
+            vx: -speed * Math.cos(diagonalAngle), // Left
+            vy: speed * Math.sin(diagonalAngle), // Down
             type: 'homing_missile'
         });
     }
