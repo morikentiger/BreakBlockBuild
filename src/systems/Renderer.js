@@ -232,21 +232,81 @@ export class Renderer {
     }
 
     drawBoss(boss) {
+        this.ctx.save();
+
+        // Phase-based glow
+        if (boss.phase === 3) {
+            this.ctx.shadowBlur = 30;
+            this.ctx.shadowColor = boss.color;
+        } else if (boss.phase === 2) {
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = boss.color;
+        }
+
+        // Boss body
         this.ctx.fillStyle = boss.color;
         this.ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
 
         // Boss HP Bar
+        const barWidth = boss.width;
+        const barHeight = 8;
+        const barY = boss.y - 15;
+
+        this.ctx.fillStyle = '#333';
+        this.ctx.fillRect(boss.x, barY, barWidth, barHeight);
         this.ctx.fillStyle = 'red';
-        this.ctx.fillRect(boss.x, boss.y - 10, boss.width, 5);
-        this.ctx.fillStyle = 'green';
-        this.ctx.fillRect(boss.x, boss.y - 10, boss.width * (boss.hp / boss.maxHp), 5);
+        this.ctx.fillRect(boss.x, barY, barWidth, barHeight);
+
+        // HP gradient based on phase
+        const hpRatio = boss.hp / boss.maxHp;
+        if (hpRatio > 0.66) {
+            this.ctx.fillStyle = '#00ff00';
+        } else if (hpRatio > 0.33) {
+            this.ctx.fillStyle = '#ffaa00';
+        } else {
+            this.ctx.fillStyle = '#ff0000';
+        }
+        this.ctx.fillRect(boss.x, barY, barWidth * hpRatio, barHeight);
+
+        // Beam charge indicator
+        if (boss.isChargingBeamAttack()) {
+            const chargeProgress = boss.getBeamChargeProgress();
+            this.ctx.fillStyle = `rgba(255, 0, 255, ${chargeProgress})`;
+            this.ctx.fillRect(boss.x, boss.y + boss.height, boss.width, 5);
+
+            // Warning text
+            this.ctx.fillStyle = '#ff00ff';
+            this.ctx.font = 'bold 20px Inter';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('BEAM CHARGING!', boss.x + boss.width / 2, boss.y - 30);
+        }
+
+        // Sword shield
+        if (boss.swordCount > 0) {
+            const swordPositions = boss.getSwordPositions();
+            swordPositions.forEach(sword => {
+                this.ctx.save();
+                this.ctx.translate(sword.x, sword.y);
+                this.ctx.rotate(sword.angle + Math.PI / 2);
+
+                this.ctx.fillStyle = '#ff3300';
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, -15);
+                this.ctx.lineTo(4, 0);
+                this.ctx.lineTo(0, 15);
+                this.ctx.lineTo(-4, 0);
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                this.ctx.restore();
+            });
+        }
+
+        this.ctx.restore();
     }
 
     drawProjectile(proj) {
         this.ctx.save();
-        // Reduce shadow blur for performance
-        // this.ctx.shadowBlur = 10;
-        // this.ctx.shadowColor = proj.color;
 
         if (proj.type === 'boss_bullet') {
             // Draw boss bullets as circles
@@ -267,6 +327,24 @@ export class Renderer {
             this.ctx.lineTo(-5, -5);
             this.ctx.closePath();
             this.ctx.fill();
+            this.ctx.restore();
+        } else if (proj.type === 'boss_beam') {
+            // Draw boss beam as thick purple beam
+            this.ctx.fillStyle = proj.color;
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = proj.color;
+            this.ctx.fillRect(proj.x - proj.width / 2, proj.y - proj.height / 2, proj.width, proj.height);
+        } else if (proj.type === 'boomerang') {
+            // Draw boomerang as spinning disc
+            this.ctx.fillStyle = proj.color;
+            this.ctx.save();
+            this.ctx.translate(proj.x, proj.y);
+            this.ctx.rotate(proj.spin || 0);
+
+            // Draw X shape
+            this.ctx.fillRect(-12, -2, 24, 4);
+            this.ctx.fillRect(-2, -12, 4, 24);
+
             this.ctx.restore();
         } else {
             // Draw player projectiles as rectangles

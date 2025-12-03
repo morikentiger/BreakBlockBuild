@@ -280,7 +280,8 @@ export class Game {
 
                 // Sword vs Projectiles (Boss bullets)
                 this.projectiles.forEach(proj => {
-                    if (proj.active && (proj.type === 'boss_bullet' || proj.type === 'homing_missile')) {
+                    const isBossProjectile = ['boss_bullet', 'homing_missile', 'boss_beam', 'boomerang'].includes(proj.type);
+                    if (proj.active && isBossProjectile) {
                         if (Physics.checkCircleCollision({ x: swordX, y: swordY, radius: swordSize }, proj)) {
                             proj.active = false; // Destroy bullet
                             this.score += 50; // Score for intercepting missiles
@@ -365,10 +366,10 @@ export class Game {
                     this.projectiles.push(new Projectile(attack.x, attack.y, attack.vx, attack.vy, 'boss_bullet'));
                 }
 
-                // Poll for new missiles
-                const newMissiles = this.boss.pollProjectiles();
-                newMissiles.forEach(m => {
-                    this.projectiles.push(new Projectile(m.x, m.y, m.vx, m.vy, m.type));
+                // Poll for new projectiles from boss
+                const newProjectiles = this.boss.pollProjectiles();
+                newProjectiles.forEach(p => {
+                    this.projectiles.push(new Projectile(p.x, p.y, p.vx, p.vy, p.type, p.damage));
                 });
 
                 // Boss Collision
@@ -393,9 +394,11 @@ export class Game {
 
                 // Boss Projectile vs Player
                 this.projectiles.forEach(proj => {
-                    if ((proj.type === 'boss_bullet' || proj.type === 'homing_missile') && proj.active && Physics.checkCircleCollision(this.player, proj)) {
+                    const isBossProjectile = ['boss_bullet', 'homing_missile', 'boss_beam', 'boomerang'].includes(proj.type);
+                    if (isBossProjectile && proj.active && Physics.checkCircleCollision(this.player, proj)) {
                         if (!this.player.invincible) {
-                            this.player.hp -= 5;
+                            const damage = proj.damage || (proj.type === 'boss_beam' ? 20 : 5);
+                            this.player.hp -= damage;
                             if (this.player.hp <= 0) {
                                 this.gameOver();
                             }
@@ -403,6 +406,22 @@ export class Game {
                         proj.active = false;
                     }
                 });
+
+                // Boss Sword Shield vs Player Projectiles
+                if (this.boss.swordCount > 0) {
+                    const swordPositions = this.boss.getSwordPositions();
+                    this.projectiles.forEach(proj => {
+                        if (proj.active && proj.type !== 'boss_bullet' && proj.type !== 'homing_missile' &&
+                            proj.type !== 'boss_beam' && proj.type !== 'boomerang') {
+                            swordPositions.forEach(sword => {
+                                if (Physics.checkCircleCollision({ x: sword.x, y: sword.y, radius: 15 }, proj)) {
+                                    proj.active = false; // Boss blocks player projectiles
+                                    this.spawnFloatingText(sword.x, sword.y, "BLOCKED!", "#ff3300");
+                                }
+                            });
+                        }
+                    });
+                }
             }
         }
     }
