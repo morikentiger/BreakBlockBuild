@@ -400,15 +400,42 @@ export class Game {
         document.getElementById('game-over-screen').classList.remove('hidden');
         document.querySelector('#game-over-screen h1').innerText = "YOU WIN!";
         document.getElementById('final-score').innerText = this.score;
+        document.getElementById('device-category').innerText = this.getDeviceCategoryLabel();
+    }
+
+    getDeviceCategory() {
+        // Detect device type and orientation
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isTablet = /iPad|Android/i.test(navigator.userAgent) && window.innerWidth >= 768;
+
+        if (isMobile && !isTablet) {
+            // Mobile device - check orientation
+            const isPortrait = window.innerHeight > window.innerWidth;
+            return isPortrait ? 'mobile-portrait' : 'mobile-landscape';
+        } else {
+            // PC or Tablet (treat tablet as PC)
+            return 'pc';
+        }
+    }
+
+    getDeviceCategoryLabel() {
+        const category = this.getDeviceCategory();
+        const labels = {
+            'mobile-portrait': 'スマホ（縦画面）',
+            'mobile-landscape': 'スマホ（横画面）',
+            'pc': 'PC'
+        };
+        return labels[category] || 'PC';
     }
 
     shareToAntigravity() {
         const score = this.score;
         const gameName = 'BreakBlockBuild';
         const gameUrl = 'https://morikentiger.github.io/BreakBlockBuild/';
+        const category = this.getDeviceCategory();
 
-        // Antigravity URL with score parameter
-        const antigravityUrl = `https://antigravity-sns.vercel.app/?score=${score}&game=${gameName}`;
+        // Antigravity URL with score, game name, and category parameters
+        const antigravityUrl = `https://antigravity-sns.vercel.app/?score=${score}&game=${gameName}&category=${category}`;
 
         // Open in new tab
         window.open(antigravityUrl, '_blank');
@@ -457,6 +484,7 @@ export class Game {
         document.getElementById('game-over-screen').classList.remove('hidden');
         document.querySelector('#game-over-screen h1').innerText = "GAME OVER";
         document.getElementById('final-score').innerText = this.score;
+        document.getElementById('device-category').innerText = this.getDeviceCategoryLabel();
     }
 
     handleCollision(player, block) {

@@ -172,6 +172,22 @@ button:hover {
   margin-bottom: 30px;
 }
 
+.category-info {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  margin: 10px 0;
+  padding: 10px 20px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid var(--primary-color);
+  border-radius: 15px;
+  text-shadow: 0 0 10px var(--primary-color);
+}
+
+.category-info span {
+  font-weight: bold;
+  color: #fff;
+}
+
 .menu-buttons {
   display: flex;
   flex-direction: column;
