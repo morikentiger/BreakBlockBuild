@@ -98,16 +98,31 @@ export class Game {
         this.floatingTexts = [];
         this.score = 0;
         this.spawnTimer = 0;
-        this.baseScrollSpeed = 70; // Faster for better feel
+        this.baseScrollSpeed = 70;
         this.scrollSpeed = this.baseScrollSpeed;
-        // Block Height is Player Radius * 4 = 80.
-        // Initial Speed is 60 px/s.
-        // Interval = 80 / 60 = 1.33s
-        this.spawnInterval = 1.0; // Faster spawns to match speed
+        this.spawnInterval = 1.0;
 
-        this.gameTime = 60; // 60 Seconds for scavenge phase
-        this.phase = 'scavenge'; // 'scavenge', 'boss'
+        this.gameTime = 60;
+        this.phase = 'scavenge';
         this.boss = null;
+
+        // Event System
+        this.combo = 0;
+        this.comboTimer = 0;
+        this.comboTimeLimit = 2.0; // 2 seconds to maintain combo
+        this.maxCombo = 0;
+
+        this.miniBosses = [];
+        this.miniBoss1Spawned = false;
+        this.miniBoss2Spawned = false;
+
+        this.bonusTimeActive = false;
+        this.bonusTimeTimer = 0;
+        this.bonusTimeDuration = 5.0;
+        this.nextBonusTime = 15 + Math.random() * 10; // Random between 15-25s
+
+        this.goldenBlockTimer = 0;
+        this.goldenBlockInterval = 8 + Math.random() * 4; // Every 8-12 seconds
 
         this.lastTime = 0;
         this.isRunning = false;
@@ -171,9 +186,80 @@ export class Game {
     update(deltaTime) {
         this.player.update(deltaTime, this.input);
 
-        // Keep scroll speed constant - no dynamic difficulty
-        // this.scrollSpeed stays at this.baseScrollSpeed
+        // === EVENT SYSTEM ===
+        if (this.phase === 'scavenge') {
+            // Combo Timer
+            if (this.combo > 0) {
+                this.comboTimer += deltaTime;
+                if (this.comboTimer > this.comboTimeLimit) {
+                    this.combo = 0;
+                    this.comboTimer = 0;
+                }
+            }
 
+            // Progressive Difficulty - scroll speed increases over time
+            const timeElapsed = 60 - this.gameTime;
+            this.scrollSpeed = this.baseScrollSpeed + (timeElapsed * 2); // +2 speed per second
+            this.spawnInterval = Math.max(0.5, 1.0 - (timeElapsed * 0.01)); // Faster spawns
+
+            // Bonus Time Event
+            this.bonusTimeTimer += deltaTime;
+            if (this.bonusTimeTimer >= this.nextBonusTime && !this.bonusTimeActive) {
+                this.bonusTimeActive = true;
+                this.bonusTimeTimer = 0;
+                this.spawnFloatingText(this.width / 2, 100, "BONUS TIME! x2 ITEMS!", "#ffff00");
+            }
+
+            if (this.bonusTimeActive) {
+                this.bonusTimeTimer += deltaTime;
+                if (this.bonusTimeTimer >= this.bonusTimeDuration) {
+                    this.bonusTimeActive = false;
+                    this.bonusTimeTimer = 0;
+                    this.nextBonusTime = 15 + Math.random() * 10;
+                }
+            }
+
+            // Golden Block Spawning
+            this.goldenBlockTimer += deltaTime;
+            if (this.goldenBlockTimer >= this.goldenBlockInterval) {
+                this.spawnGoldenBlock();
+                this.goldenBlockTimer = 0;
+                this.goldenBlockInterval = 8 + Math.random() * 4;
+            }
+
+            // Mini-Boss Spawning
+            if (!this.miniBoss1Spawned && this.gameTime <= 30) {
+                this.spawnMiniBoss();
+                this.miniBoss1Spawned = true;
+            }
+            if (!this.miniBoss2Spawned && this.gameTime <= 15) {
+                this.spawnMiniBoss();
+                this.miniBoss2Spawned = true;
+            }
+
+            // Update Mini-Bosses
+            this.miniBosses.forEach(mb => {
+                if (mb.active) {
+                    mb.update(deltaTime, this.player);
+
+                    // Mini-boss collision with player
+                    if (Physics.checkCollision(this.player, mb)) {
+                        if (this.player.isAttacking || this.player.invincible) {
+                            mb.hp -= this.player.atk;
+                            if (mb.hp <= 0) {
+                                mb.active = false;
+                                this.score += 500;
+                                this.spawnFloatingText(mb.x, mb.y, "+500 MINI-BOSS!", "#ff00ff");
+                                // Drop multiple items
+                                for (let i = 0; i < 3; i++) {
+                                    this.items.push(new Item(mb.x + Math.random() * 50, mb.y, ['atk', 'spd', 'def'][i]));
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         // Block Spawning
         this.spawnTimer += deltaTime;
@@ -529,44 +615,71 @@ export class Game {
     handleCollision(player, block) {
         // Invincibility or Shake Attack or High Stats (Body Slam)
         if (player.invincible || (player.isShaking && !player.isCharging && !player.isAttacking) || player.canBreakOnContact) {
-            block.hp -= player.atk; // Deal ATK damage on contact
+            block.hp -= player.atk;
 
             if (block.hp <= 0) {
                 block.active = false;
+                this.addCombo();
+                const baseScore = block.type === 'golden' ? 1000 : 100;
+                const comboBonus = this.combo * 10;
+                this.score += baseScore + comboBonus;
                 this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
-                this.score += 100;
+                if (this.combo > 1) {
+                    this.spawnFloatingText(block.x, block.y, `x${this.combo} COMBO! +${comboBonus}`, "#ffff00");
+                }
             } else {
-                // Slight pushback if not broken immediately
                 player.y += 2;
             }
             return;
         }
 
         if (player.isAttacking) {
-            // Break block using Charge Power
             const damage = player.atk + player.chargePower;
             block.hp -= damage;
 
-            // Consume less power per block to enable multi-block destruction
-            player.chargePower = Math.max(0, player.chargePower - 3); // Consume 3 power per block
+            player.chargePower = Math.max(0, player.chargePower - 3);
 
             if (block.hp <= 0) {
                 block.active = false;
+                this.addCombo();
+                const baseScore = block.type === 'golden' ? 1000 : 100;
+                const comboBonus = this.combo * 10;
+                this.score += baseScore + comboBonus;
                 this.spawnItem(block.x + block.width / 2, block.y + block.height / 2, block.type);
-                this.score += 100;
+                if (this.combo > 1) {
+                    this.spawnFloatingText(block.x, block.y, `x${this.combo} COMBO! +${comboBonus}`, "#ffff00");
+                }
             } else {
-                // Bounce back logic could go here
-                player.isAttacking = false; // Stop attack if block too hard
+                player.isAttacking = false;
                 player.y += 10;
             }
         } else {
-            // Simple collision resolution (stop player)
-            // Push player down
             player.y += 5;
         }
     }
 
+    addCombo() {
+        this.combo++;
+        this.comboTimer = 0;
+        if (this.combo > this.maxCombo) {
+            this.maxCombo = this.combo;
+        }
+    }
+
     spawnItem(x, y, blockType) {
+        // Golden blocks always drop rare items
+        if (blockType === 'golden') {
+            const rareTypes = ['atk', 'spd', 'def', 'beam', 'sword', 'magnet'];
+            const type = rareTypes[Math.floor(Math.random() * rareTypes.length)];
+            this.items.push(new Item(x, y, type));
+            // Bonus time: drop extra item
+            if (this.bonusTimeActive) {
+                const type2 = rareTypes[Math.floor(Math.random() * rareTypes.length)];
+                this.items.push(new Item(x + 20, y, type2));
+            }
+            return;
+        }
+
         let type = 'hp';
         if (blockType === 'resource') {
             const rand = Math.random();
@@ -574,21 +687,25 @@ export class Game {
             else if (rand < 0.30) type = 'spd';
             else if (rand < 0.45) type = 'def';
             else if (rand < 0.70) type = 'beam';
-            else type = 'magnet'; // 30% chance for magnet from green blocks
+            else type = 'magnet';
         } else if (blockType === 'hard') {
-            // Red block - chance for sword
             const rand = Math.random();
-            if (rand > 0.7) type = 'sword'; // 30% chance for sword
+            if (rand > 0.7) type = 'sword';
             else type = 'atk';
         } else {
             const rand = Math.random();
-            if (rand > 0.95) type = 'invincible'; // Rare invincibility
-            else if (rand > 0.90) type = 'beam'; // 5% chance from normal blocks
+            if (rand > 0.95) type = 'invincible';
+            else if (rand > 0.90) type = 'beam';
             else if (rand > 0.7) type = 'hp';
             else return;
         }
 
         this.items.push(new Item(x, y, type));
+
+        // Bonus Time: Double drops!
+        if (this.bonusTimeActive) {
+            this.items.push(new Item(x + 20, y, type));
+        }
     }
 
     collectItem(item) {
@@ -660,14 +777,91 @@ export class Game {
             if (text.active) this.renderer.drawFloatingText(text);
         });
 
+        // Draw mini-bosses
+        this.miniBosses.forEach(mb => {
+            if (mb.active) {
+                this.ctx.fillStyle = mb.color;
+                this.ctx.fillRect(mb.x, mb.y, mb.width, mb.height);
+                // HP bar
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillRect(mb.x, mb.y - 10, mb.width, 5);
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.fillRect(mb.x, mb.y - 10, mb.width * (mb.hp / mb.maxHp), 5);
+            }
+        });
+
         if (this.boss && this.phase === 'boss') {
             this.renderer.drawBoss(this.boss);
         }
 
         this.renderer.drawPlayer(this.player);
+
+        // Draw combo counter
+        if (this.combo > 1) {
+            this.ctx.save();
+            this.ctx.fillStyle = '#ffff00';
+            this.ctx.font = 'bold 40px Inter';
+            this.ctx.textAlign = 'center';
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeText(`${this.combo}x COMBO!`, this.width / 2, 80);
+            this.ctx.fillText(`${this.combo}x COMBO!`, this.width / 2, 80);
+            this.ctx.restore();
+        }
+
+        // Draw bonus time indicator
+        if (this.bonusTimeActive) {
+            this.ctx.save();
+            this.ctx.fillStyle = '#ffff00';
+            this.ctx.font = 'bold 30px Inter';
+            this.ctx.textAlign = 'center';
+            const flash = Math.sin(Date.now() / 200) > 0;
+            if (flash) {
+                this.ctx.fillText('⭐ BONUS TIME! x2 ITEMS ⭐', this.width / 2, 120);
+            }
+            this.ctx.restore();
+        }
     }
 
     spawnFloatingText(x, y, text, color) {
         this.floatingTexts.push(new FloatingText(x, y, text, color));
+    }
+
+    spawnGoldenBlock() {
+        const blockWidth = this.player.radius * 4;
+        const x = Math.random() * (this.width - blockWidth);
+        const y = -blockWidth;
+
+        const goldenBlock = new Block(x, y, blockWidth, blockWidth, 'golden');
+        goldenBlock.color = '#ffd700'; // Gold color
+        goldenBlock.hp = 3; // Harder to break
+        goldenBlock.maxHp = 3;
+        goldenBlock.type = 'golden';
+
+        this.blocks.push(goldenBlock);
+        this.spawnFloatingText(x, y, "GOLDEN BLOCK!", "#ffd700");
+    }
+
+    spawnMiniBoss() {
+        const miniBoss = {
+            x: Math.random() * (this.width - 80),
+            y: -100,
+            width: 80,
+            height: 80,
+            hp: 50,
+            maxHp: 50,
+            active: true,
+            color: '#ff00ff',
+            vy: 50, // Moves down slowly
+            update: function (deltaTime, player) {
+                this.y += this.vy * deltaTime;
+                // Simple AI: move toward player horizontally
+                const dx = player.x - (this.x + this.width / 2);
+                this.x += Math.sign(dx) * 30 * deltaTime;
+            }
+        };
+
+        this.miniBosses.push(miniBoss);
+        this.spawnFloatingText(this.width / 2, 100, "MINI-BOSS APPEARS!", "#ff00ff");
     }
 }
